@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Jeanorochka • Портфель </title>
+  <title>Jean • Sheets Viewer</title>
   <meta name="description" content="Лёгкий сайт, который тянет данные из Google Sheets и переключает листы красивыми кнопками." />
   <style>
     :root {
@@ -13,8 +13,8 @@
       --glass-2: rgba(0, 0, 0, 0.30); /* чуть темнее вариант */
       --text: #ffffff; /* белый текст */
       --muted: rgba(255,255,255,0.88);
-      --accent: #812045; /* светло-малиновый */
-      --accent-2: #812045; /* чуть темнее */
+      --accent: #ff7aa5; /* светло-малиновый */
+      --accent-2: #e04682; /* чуть темнее */
       --radius: 16px;
     }
 
@@ -41,7 +41,10 @@
       height: 120%;
       left: -10%;
       top: -10%;
-      background: var(--bg-gradient);
+      /* Картинка поверх градиента */
+      background-image: var(--anime-url), var(--bg-gradient);
+      background-size: cover, cover;
+      background-position: center, center;
       filter: saturate(1.05) brightness(0.98);
       transform: scale(1.02);
       animation: slow-zoom 30s ease-in-out infinite alternate;
@@ -59,9 +62,9 @@
     }
 
     .container {
-      max-width: 1100px;
+      max-width: 100%;
       margin: 40px auto;
-      padding: 0 16px 48px;
+      padding: 0 10px 48px; /* узкий зазор ~10px от края экрана */
     }
 
     /* Header + tabs */
@@ -161,7 +164,7 @@
     }
     .btn:hover { filter: brightness(0.95); transform: translateY(-1px); }
 
-    .table-wrap { overflow: auto; max-height: 72vh; padding: 12px; }
+    .table-wrap { overflow: auto; max-height: 72vh; padding: 0; }
     table { width: 100%; border-collapse: separate; border-spacing: 0; }
     thead th {
       position: sticky; top: 0; z-index: 5;
@@ -226,7 +229,7 @@
     <header>
       <div class="brand">
         <span class="dot"></span>
-        <h1>Портфель Джеанорочки</h1>
+        <h1>Sheets Viewer</h1>
       </div>
       <nav class="tabs" id="tabs"></nav>
     </header>
@@ -249,7 +252,7 @@
     </section>
 
     <div class="footer">
-      <div> <span id="year"></span> Jeanorochka</div>
+      <div>© <span id="year"></span> Jean</div>
       <div class="note">Работает на публичном JSON (gviz) из Google Sheets.</div>
     </div>
   </div>
@@ -264,7 +267,7 @@
 const SETTINGS = {
   spreadsheetId: '1cbJLxGc0gp-hHKqr0XP4_TNvmGuAWAmzrgQN8jXclL0',
   sheets: ['Сводный отчёт', 'Акции', 'Облигации', 'Валюта'],
-  animeBackgroundUrl: 'url(https://imgur.com/a/QDvCXQ8)'
+  animeBackgroundUrl: 'url(https://images.unsplash.com/photo-1546443046-ed1ce6ffd1c1?q=80&w=2070&auto=format&fit=crop)'
 };
 
 // Кэшируем ответ браузером ради скорости. Поставь false, если хочешь жёстко без кэша.
@@ -297,8 +300,8 @@ const $table = document.getElementById('table');
 const $reload = document.getElementById('reload');
 const $open = document.getElementById('open-source');
 
-// Если нужен фон-арт, раскомментируй следующую строку
-// document.documentElement.style.setProperty('--anime-url', SETTINGS.animeBackgroundUrl);
+// Включаем фоновую картинку поверх розового градиента
+document.documentElement.style.setProperty('--anime-url', SETTINGS.animeBackgroundUrl);
 
 // ==========================
 // 3) ХЕЛПЕРЫ
@@ -354,6 +357,24 @@ function cellValue(cell) {
   if (cell.f != null) return String(cell.f);
   if (cell.v == null) return '';
   return String(cell.v);
+}
+
+// Применяем стили из gviz (если Google их отдаёт): background-color, color, text-align, font-weight
+function applyCellStyle(td, p) {
+  if (!p) return;
+  const style = (p.style || p['cellStyle'] || p['css'] || '').toString();
+  if (!style) return;
+  style.split(';').forEach(function(rule) {
+    const parts = rule.split(':');
+    if (parts.length < 2) return;
+    const prop = parts[0].trim();
+    const val = parts.slice(1).join(':').trim();
+    if (!prop || !val) return;
+    if (prop === 'background-color') td.style.backgroundColor = val;
+    else if (prop === 'color') td.style.color = val;
+    else if (prop === 'text-align') td.style.textAlign = val;
+    else if (prop === 'font-weight') td.style.fontWeight = val;
+  });
 }
 
 function renderTable(gviz) {
@@ -412,6 +433,7 @@ function renderTable(gviz) {
       } else {
         td.textContent = val;
       }
+      if (c && c.p) applyCellStyle(td, c.p);
       tr.appendChild(td);
     });
     tbody.appendChild(tr);
@@ -470,4 +492,3 @@ document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
-
