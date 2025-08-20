@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Jeanorochka • Sheets Viewer</title>
+  <meta name="description" content="Лёгкий сайт, который тянет данные из Google Sheets и переключает листы красивыми кнопками." />
+  <style>
+    :root {
+      --bg: #f8dfea; /* нежно-розовый базовый фон */
+      --bg-gradient: radial-gradient(120% 120% at 50% 0%, #fdebf3 0%, #fbd8e8 40%, #f9cfe1 100%);
+      --glass: rgba(0, 0, 0, 0.20); /* темнее панели на пару тонов */
+      --glass-2: rgba(0, 0, 0, 0.30); /* чуть темнее вариант */
+      --text: #ffffff; /* белый текст */
+      --muted: rgba(255,255,255,0.88);
+      --accent: #812045; /* светло-малиновый */
+      --accent-2: #812045; /* чуть темнее */
+      --radius: 16px;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      color: var(--text);
+      font-family: Calibri, "Segoe UI", Arial, Helvetica, sans-serif;
+      font-weight: 700; /* Calibri Bold везде */
+      background: var(--bg);
+      overflow-x: hidden;
+    }
+
+    /* Anime background */
+    .bg-wrap {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      overflow: hidden;
+    }
+    .bg {
+      position: absolute;
+      width: 120%;
+      height: 120%;
+      left: -10%;
+      top: -10%;
+      background: var(--bg-gradient);
+      filter: saturate(1.05) brightness(0.98);
+      transform: scale(1.02);
+      animation: slow-zoom 30s ease-in-out infinite alternate;
+    }
+    .bg-overlay {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(1200px 600px at 20% 10%, rgba(255,255,255,0.08), transparent 60%),
+                  radial-gradient(1200px 600px at 80% 90%, rgba(167,139,250,0.08), transparent 60%),
+                  linear-gradient(180deg, rgba(0,0,0,0.4), rgba(0,0,0,0.7));
+    }
+    @keyframes slow-zoom {
+      0% { transform: scale(1.02) translateY(0px); }
+      100% { transform: scale(1.07) translateY(-8px); }
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 40px auto;
+      padding: 0 16px 48px;
+    }
+
+    /* Header + tabs */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      background: var(--glass);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.28);
+      box-shadow: 0 10px 30px rgba(224,70,130,0.18);
+    }
+    .brand .dot {
+      width: 10px; height: 10px; border-radius: 999px; background: var(--accent);
+      box-shadow: 0 0 18px var(--accent);
+    }
+    .brand h1 { font-size: 16px; margin: 0; font-weight: 600; }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 8px;
+      border-radius: calc(var(--radius) + 8px);
+      background: var(--glass);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.28);
+    }
+    .tab-btn {
+      position: relative;
+      appearance: none;
+      border: 0;
+      padding: 10px 16px;
+      border-radius: 999px;
+      color: rgba(255,255,255,0.9);
+      background: transparent;
+      cursor: pointer;
+      font-weight: 700;
+      transition: all .18s ease;
+      isolation: isolate;
+    }
+    .tab-btn:hover { color: #fff; transform: translateY(-1px) scale(1.01); }
+    .tab-btn.active { color: #fff; }
+    .tab-btn.active::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      z-index: -1;
+      box-shadow: 0 10px 24px rgba(224, 70, 130, 0.35);
+    }
+
+    /* Card */
+    .card {
+      margin-top: 14px;
+      border-radius: calc(var(--radius) + 4px);
+      background: var(--glass);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.30);
+      box-shadow: 0 18px 40px rgba(0,0,0,0.35);
+      overflow: hidden;
+    }
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+      border-bottom: 1px solid rgba(255,255,255,0.09);
+    }
+    .card-head .title { font-weight: 700; }
+    .card-head .right { display: flex; gap: 8px; align-items: center; }
+    .muted { color: #c9d1d9; opacity: 0.75; font-size: 13px; }
+
+    .controls { display: flex; align-items: center; gap: 8px; }
+    .btn {
+      border: 0;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 700;
+      transition: transform .15s ease, filter .15s ease;
+      box-shadow: 0 10px 20px rgba(224, 70, 130, 0.25);
+    }
+    .btn:hover { filter: brightness(0.95); transform: translateY(-1px); }
+
+    .table-wrap { overflow: auto; max-height: 72vh; padding: 12px; }
+    table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    thead th {
+      position: sticky; top: 0; z-index: 5;
+      background: rgba(255,255,255,0.12);
+      backdrop-filter: blur(8px);
+      text-align: left; font-weight: 700; font-size: 13px; color: #ffffff;
+      border-bottom: 1px solid rgba(255,255,255,0.18);
+      padding: 12px 14px;
+    }
+    tbody td {
+      padding: 10px 14px; font-size: 14px; color: #000; border-bottom: 1px solid rgba(0,0,0,0.10);
+      white-space: nowrap;
+    }
+    tbody tr:hover { background: rgba(255, 255, 255, 0.06); } 
+    tbody tr:nth-child(2n) { background: rgba(255,255,255,0.035); }
+    thead th + th, tbody td + td { border-left: 1px solid rgba(255,255,255,0.08); }
+    thead th:first-child { border-top-left-radius: 12px; }
+    thead th:last-child { border-top-right-radius: 12px; }
+    tbody tr:last-child td:first-child { border-bottom-left-radius: 12px; }
+    tbody tr:last-child td:last-child { border-bottom-right-radius: 12px; }
+    .cell-ticker { display: inline-flex; align-items: center; gap: 8px; }
+    .cell-ticker img { width: 18px; height: 18px; border-radius: 4px; object-fit: contain; vertical-align: middle; }
+
+    .empty, .error, .loading {
+      padding: 28px 16px; font-size: 14px;
+    }
+
+    .footer {
+      margin-top: 14px;
+      display: flex; align-items: center; gap: 12px;
+      color: #c9d1d9; opacity: .8; font-size: 12px;
+    }
+    .footer .note {
+      margin-left: auto;
+      margin-right: 2px; /* сдвиг влево от правого края на пару пикселей */
+      font-family: Calibri, "Segoe UI", Arial, Helvetica, sans-serif;
+      font-weight: 700;
+      font-size: 10px;
+      color: #000;
+      opacity: 1;
+    }
+    .footer a { color: var(--accent); text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+
+    /* Mobile tweaks */
+    @media (max-width: 640px) {
+      header { flex-direction: column; align-items: stretch; }
+      .tabs { justify-content: center; }
+      .brand { justify-content: center; }
+      .card-head { flex-direction: column; align-items: flex-start; gap: 6px; }
+    }
+  #meta { color: #000 !important; }
+  </style>
+</head>
+<body>
+  <div class="bg-wrap">
+    <div class="bg"></div>
+    <div class="bg-overlay"></div>
+  </div>
+
+  <div class="container">
+    <header>
+      <div class="brand">
+        <span class="dot"></span>
+        <h1>Sheets Viewer</h1>
+      </div>
+      <nav class="tabs" id="tabs"></nav>
+    </header>
+
+    <section class="card">
+      <div class="card-head">
+        <div class="title" id="sheet-title">Лист: —</div>
+        <div class="right">
+          <span class="muted" id="meta"></span>
+          <div class="controls">
+            <button class="btn" id="open-source">Открыть в Google Sheets</button>
+            <button class="btn" id="reload">Обновить</button>
+          </div>
+        </div>
+      </div>
+      <div id="state" class="loading">Загрузка…</div>
+      <div class="table-wrap" id="table-wrap" hidden>
+        <table id="table"></table>
+      </div>
+    </section>
+
+    <div class="footer">
+      <div> <span id="year"></span> Jeanorochka</div>
+      <div class="note">Работает на публичном JSON (gviz) из Google Sheets.</div>
+    </div>
+  </div>
+  </div>
+
+  <script>
+'use strict';
+
+// ==========================
+// 1) НАСТРОЙКИ
+// ==========================
+const SETTINGS = {
+  spreadsheetId: '1cbJLxGc0gp-hHKqr0XP4_TNvmGuAWAmzrgQN8jXclL0',
+  sheets: ['Сводный отчёт', 'Акции', 'Облигации', 'Валюта'],
+  animeBackgroundUrl: 'url(https://images.unsplash.com/photo-1546443046-ed1ce6ffd1c1?q=80&w=2070&auto=format&fit=crop)'
+};
+
+// Кэшируем ответ браузером ради скорости. Поставь false, если хочешь жёстко без кэша.
+const USE_CACHE = true;
+
+// Мини-иконки тикеров (можно дополнять)
+const ICONS = {
+  'SBER': 'https://logo.clearbit.com/sberbank.com',
+  'GAZP': 'https://logo.clearbit.com/gazprom.com',
+  'LKOH': 'https://logo.clearbit.com/lukoil.com',
+  'YNDX': 'https://logo.clearbit.com/yandex.com',
+  'ROSN': 'https://logo.clearbit.com/rosneft.com',
+  'NVTK': 'https://logo.clearbit.com/novatek.ru',
+  'AAPL': 'https://logo.clearbit.com/apple.com',
+  'MSFT': 'https://logo.clearbit.com/microsoft.com',
+  'GOOGL': 'https://logo.clearbit.com/abc.xyz',
+  'TSLA': 'https://logo.clearbit.com/tesla.com'
+};
+
+// ==========================
+// 2) ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+// ==========================
+let activeSheet = SETTINGS.sheets[0] || null;
+const $tabs = document.getElementById('tabs');
+const $title = document.getElementById('sheet-title');
+const $meta = document.getElementById('meta');
+const $state = document.getElementById('state');
+const $wrap = document.getElementById('table-wrap');
+const $table = document.getElementById('table');
+const $reload = document.getElementById('reload');
+const $open = document.getElementById('open-source');
+
+// Если нужен фон-арт, раскомментируй следующую строку
+// document.documentElement.style.setProperty('--anime-url', SETTINGS.animeBackgroundUrl);
+
+// ==========================
+// 3) ХЕЛПЕРЫ
+// ==========================
+function renderTabs() {
+  $tabs.innerHTML = '';
+  SETTINGS.sheets.forEach(function(name) {
+    const btn = document.createElement('button');
+    btn.className = 'tab-btn' + (name === activeSheet ? ' active' : '');
+    btn.textContent = name;
+    btn.addEventListener('click', function() { selectSheet(name); });
+    $tabs.appendChild(btn);
+  });
+}
+
+function selectSheet(name) {
+  if (name === activeSheet) return;
+  activeSheet = name;
+  Array.prototype.forEach.call($tabs.querySelectorAll('.tab-btn'), function(b) {
+    b.classList.toggle('active', b.textContent === name);
+  });
+  loadSheet(name);
+}
+
+function parseSheetSource(input) {
+  const s = String(input).trim();
+  let m = s.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+  if (m) return { kind: 'd', id: m[1] };
+  m = s.match(/spreadsheets\/d\/e\/([a-zA-Z0-9-_]+)/);
+  if (m) return { kind: 'e', id: m[1] };
+  if (/^2PACX-/.test(s)) return { kind: 'e', id: s };
+  return { kind: 'd', id: s };
+}
+
+function gvizUrl(sheet) {
+  const src = parseSheetSource(SETTINGS.spreadsheetId);
+  const base = src.kind === 'e'
+    ? 'https://docs.google.com/spreadsheets/d/e/' + src.id + '/gviz/tq'
+    : 'https://docs.google.com/spreadsheets/d/' + src.id + '/gviz/tq';
+  const params = new URLSearchParams({ sheet: sheet, tqx: 'out:json' });
+  return base + '?' + params.toString();
+}
+
+function parseGviz(text) {
+  const start = text.indexOf('{');
+  const end = text.lastIndexOf('}') + 1;
+  if (start === -1 || end === -1) throw new Error('Не удалось распарсить JSON');
+  return JSON.parse(text.slice(start, end));
+}
+
+function cellValue(cell) {
+  if (!cell) return '';
+  if (cell.f != null) return String(cell.f);
+  if (cell.v == null) return '';
+  return String(cell.v);
+}
+
+function renderTable(gviz) {
+  const cols = (gviz && gviz.table && gviz.table.cols) ? gviz.table.cols : [];
+  const rows = (gviz && gviz.table && gviz.table.rows) ? gviz.table.rows : [];
+
+  if (!cols.length) {
+    $table.innerHTML = '';
+    $state.hidden = false;
+    $wrap.hidden = true;
+    $state.className = 'empty';
+    $state.textContent = 'Пусто. Проверьте, опубликован ли лист и есть в нём данные.';
+    return;
+  }
+
+  // Определим колонку тикера, если она есть
+  const colLabels = cols.map(function(c) { return String(c.label || c.id || ''); });
+  const tickerCol = (function() {
+    for (var i = 0; i < colLabels.length; i++) {
+      if (/^(тикер|ticker|symbol)$/i.test(colLabels[i])) return i;
+    }
+    return -1;
+  })();
+
+  const thead = document.createElement('thead');
+  const trh = document.createElement('tr');
+  cols.forEach(function(c) {
+    const th = document.createElement('th');
+    th.textContent = c.label || c.id || '';
+    trh.appendChild(th);
+  });
+  thead.appendChild(trh);
+
+  const tbody = document.createElement('tbody');
+  rows.forEach(function(r) {
+    const tr = document.createElement('tr');
+    (r.c || []).forEach(function(c, idx) {
+      const td = document.createElement('td');
+      const val = cellValue(c);
+      if (idx === tickerCol && val) {
+        const wrap = document.createElement('span');
+        wrap.className = 'cell-ticker';
+        const iconUrl = ICONS[String(val).toUpperCase()];
+        if (iconUrl) {
+          const img = document.createElement('img');
+          img.alt = '';
+          img.referrerPolicy = 'no-referrer';
+          img.src = iconUrl;
+          img.onerror = function() { img.style.display = 'none'; };
+          wrap.appendChild(img);
+        }
+        const text = document.createElement('span');
+        text.textContent = val;
+        wrap.appendChild(text);
+        td.appendChild(wrap);
+      } else {
+        td.textContent = val;
+      }
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+
+  $table.innerHTML = '';
+  $table.appendChild(thead);
+  $table.appendChild(tbody);
+
+  $state.hidden = true;
+  $wrap.hidden = false;
+
+  const updated = new Date();
+  $meta.textContent = 'Обновлено: ' + updated.toLocaleString();
+  $title.textContent = 'Лист: ' + activeSheet;
+}
+
+async function loadSheet(name) {
+  $state.hidden = false;
+  $wrap.hidden = true;
+  $state.className = 'loading';
+  $state.textContent = 'Загрузка…';
+
+  try {
+    const res = await fetch(gvizUrl(name), { cache: USE_CACHE ? 'default' : 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const txt = await res.text();
+    const json = parseGviz(txt);
+    renderTable(json);
+  } catch (err) {
+    console.error(err);
+    $table.innerHTML = '';
+    $state.hidden = false;
+    $wrap.hidden = true;
+    $state.className = 'error';
+    $state.textContent = 'Ошибка загрузки. Проверь доступ: Publish to the web или Anyone with the link. Можно ID /d/ или опубликованный /d/e/.';
+  }
+}
+
+$reload.addEventListener('click', function() { loadSheet(activeSheet); });
+$open.addEventListener('click', function() {
+  const src = parseSheetSource(SETTINGS.spreadsheetId);
+  const url = src.kind === 'e'
+    ? 'https://docs.google.com/spreadsheets/d/e/' + src.id + '/pubhtml'
+    : 'https://docs.google.com/spreadsheets/d/' + src.id + '/edit';
+  window.open(url, '_blank');
+});
+
+function init() {
+  document.getElementById('year').textContent = new Date().getFullYear();
+  renderTabs();
+  if (activeSheet) loadSheet(activeSheet);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
