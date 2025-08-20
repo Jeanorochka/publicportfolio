@@ -16,6 +16,7 @@
       --accent: #ff7aa5; /* светло-малиновый */
       --accent-2: #e04682; /* чуть темнее */
       --radius: 16px;
+      --table-height: 70vh; /* фиксированная высота области таблицы */
     }
 
     html, body {
@@ -164,7 +165,7 @@
     }
     .btn:hover { filter: brightness(0.95); transform: translateY(-1px); }
 
-    .table-wrap { overflow: auto; max-height: 72vh; padding: 0; }
+    .table-wrap { height: var(--table-height); overflow: auto; padding: 0; }
     table { width: 100%; border-collapse: separate; border-spacing: 0; }
     thead th {
       position: sticky; top: 0; z-index: 5;
@@ -256,7 +257,6 @@
       <div class="note">Работает на публичном JSON (gviz) из Google Sheets.</div>
     </div>
   </div>
-  </div>
 
   <script>
 'use strict';
@@ -267,7 +267,7 @@
 const SETTINGS = {
   spreadsheetId: '1cbJLxGc0gp-hHKqr0XP4_TNvmGuAWAmzrgQN8jXclL0',
   sheets: ['Сводный отчёт', 'Акции', 'Облигации', 'Валюта'],
-  animeBackgroundUrl: 'url(https://i.imgur.com/66V5Oyu.jpeg)'
+  animeBackgroundUrl: 'https://publicportfolio-lime.vercel.app/image.png'
 };
 
 // Кэшируем ответ браузером ради скорости. Поставь false, если хочешь жёстко без кэша.
@@ -301,7 +301,11 @@ const $reload = document.getElementById('reload');
 const $open = document.getElementById('open-source');
 
 // Включаем фоновую картинку поверх розового градиента
-document.documentElement.style.setProperty('--anime-url', SETTINGS.animeBackgroundUrl);
+function setBg(val){
+  const v = /^url\(/.test(val) ? val : `url(${val})`;
+  document.documentElement.style.setProperty('--anime-url', v);
+}
+setBg(SETTINGS.animeBackgroundUrl);
 
 // ==========================
 // 3) ХЕЛПЕРЫ
@@ -492,4 +496,3 @@ document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
-
