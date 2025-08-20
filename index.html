@@ -30,39 +30,6 @@
       overflow-x: hidden;
     }
 
-    /* Anime background */
-    .bg-wrap {
-      position: fixed;
-      inset: 0;
-      z-index: -1;
-      overflow: hidden;
-    }
-    .bg {
-      position: absolute;
-      width: 120%;
-      height: 120%;
-      left: -10%;
-      top: -10%;
-      /* Картинка поверх градиента */
-      background-image: var(--anime-url), var(--bg-gradient);
-      background-size: cover, cover;
-      background-position: center, center;
-      filter: saturate(1.05) brightness(0.98);
-      transform: scale(1.02);
-      animation: slow-zoom 30s ease-in-out infinite alternate;
-    }
-    .bg-overlay {
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(1200px 600px at 20% 10%, rgba(255,255,255,0.08), transparent 60%),
-                  radial-gradient(1200px 600px at 80% 90%, rgba(167,139,250,0.08), transparent 60%),
-                  linear-gradient(180deg, rgba(0,0,0,0.4), rgba(0,0,0,0.7));
-    }
-    @keyframes slow-zoom {
-      0% { transform: scale(1.02) translateY(0px); }
-      100% { transform: scale(1.07) translateY(-8px); }
-    }
-
     .container {
       max-width: 100%;
       margin: 40px auto;
@@ -222,11 +189,6 @@
   </style>
 </head>
 <body>
-  <div class="bg-wrap">
-    <div class="bg"></div>
-    <div class="bg-overlay"></div>
-  </div>
-
   <div class="container">
     <header>
       <div class="brand">
@@ -303,11 +265,7 @@ const $reload = document.getElementById('reload');
 const $open = document.getElementById('open-source');
 
 // Включаем фоновую картинку поверх розового градиента
-function setBg(val){
-  const v = /^url\(/.test(val) ? val : `url(${val})`;
-  document.documentElement.style.setProperty('--anime-url', v);
-}
-setBg(SETTINGS.animeBackgroundUrl);
+
 
 // ==========================
 // 3) ХЕЛПЕРЫ
@@ -353,63 +311,10 @@ function gvizUrl(sheet) {
 
 function parseGviz(text) {
   const start = text.indexOf('{');
-  const end = text.lastIndexOf('}') + 1;
-  if (start === -1 || end === -1) throw new Error('Не удалось распарсить JSON');
-  return JSON.parse(text.slice(start, end));
-}
-
-// ====== Цвета/форматы через Google Sheets API v4 (опционально) ======
-function rgbToHex(o){ if(!o) return null; const r=Math.round((o.red||0)*255), g=Math.round((o.green||0)*255), b=Math.round((o.blue||0)*255); return '#' + [r,g,b].map(x=>x.toString(16).padStart(2,'0')).join(''); }
-function buildFormatsMapFromApi(data){
-  const map = new Map();
-  const sheets = (data && data.sheets) || [];
-  const grid = sheets[0] && sheets[0].data && sheets[0].data[0] && sheets[0].data[0].rowData || [];
-  for (let r=0; r<grid.length; r++){
-    const row = grid[r];
-    const values = (row && row.values) || [];
-    for (let c=0; c<values.length; c++){
-      const v = values[c];
-      const ef = v && v.effectiveFormat;
-      if (!ef) continue;
-      const parts = [];
-      const bg = rgbToHex(ef.backgroundColor); if (bg) parts.push('background-color:'+bg);
-      const tf = ef.textFormat || {};
-      const fc = rgbToHex(tf.foregroundColor); if (fc) parts.push('color:'+fc);
-      if (ef.horizontalAlignment) parts.push('text-align:'+ef.horizontalAlignment);
-      if (tf.bold) parts.push('font-weight:bold');
-      if (parts.length) map.set(r+','+c, parts.join(';'));
-    }
+  const end   = text.lastIndexOf('}') + 1; // берём последнюю закрывающую скобку
+  if (start < 0 || end <= start) {
+    throw new Error('Не удалось распарсить JSON из gviz');
   }
-  return map;
-}
-function fetchFormatsIfEnabled(sheetName){
-  const cfg = SETTINGS.formats;
-  if (!cfg || !cfg.enabled || !cfg.apiKey) return Promise.resolve(null);
-  const src = parseSheetSource(SETTINGS.spreadsheetId);
-  if (src.kind !== 'd') return Promise.resolve(null); // API v4 принимает только обычный /d/ ID
-  const range = "'" + sheetName.replace(/'/g, "''") + "'";
-  const url = 'https://sheets.googleapis.com/v4/spreadsheets/' + src.id +
-    '?includeGridData=true&ranges=' + encodeURIComponent(range) +
-    '&fields=sheets(data(rowData(values(effectiveFormat(backgroundColor,textFormat,horizontalAlignment)))))' +
-    '&key=' + encodeURIComponent(cfg.apiKey);
-  return fetch(url, { cache: USE_CACHE ? 'default' : 'no-store' })
-    .then(r => { if(!r.ok) throw new Error('Sheets API HTTP '+r.status); return r.json(); })
-    .then(buildFormatsMapFromApi)
-    .catch(() => null);
-}
-
-function applyFormatsToTbody(tbody, formatsMap){
-  if (!formatsMap) return;
-  const rows = tbody.rows;
-  for (let r=0; r<rows.length; r++){
-    const cells = rows[r].cells;
-    for (let c=0; c<cells.length; c++){
-      const s = formatsMap.get(r+','+c);
-      if (s) applyCellStyle(cells[c], { style: s });
-    }
-  }
-}') + 1;
-  if (start === -1 || end === -1) throw new Error('Не удалось распарсить JSON');
   return JSON.parse(text.slice(start, end));
 }
 
