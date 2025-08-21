@@ -356,13 +356,14 @@ function fetchFormatsIfEnabled(sheetName){
     .catch(() => null);
 }
 
-function applyFormatsToTbody(tbody, formatsMap){
+// Сдвигаем применяемые форматы на 1 строку, чтобы пропустить заголовок thead
+function applyFormatsToTbody(tbody, formatsMap, rowOffset = 1){
   if (!formatsMap) return;
   const rows = tbody.rows;
   for (let r=0; r<rows.length; r++){
     const cells = rows[r].cells;
     for (let c=0; c<cells.length; c++){
-      const s = formatsMap.get(r+','+c);
+      const s = formatsMap.get((r + rowOffset) + ',' + c);
       if (s) applyCellStyle(cells[c], { style: s });
     }
   }
@@ -458,7 +459,7 @@ function renderTable(gviz, formatsMap) {
   $table.innerHTML = '';
   $table.appendChild(thead);
   $table.appendChild(tbody);
-  if (formatsMap) applyFormatsToTbody(tbody, formatsMap);
+  if (formatsMap) applyFormatsToTbody(tbody, formatsMap, 1);
 
   $state.hidden = true;
   $wrap.hidden = false;
@@ -510,5 +511,3 @@ document.addEventListener('DOMContentLoaded', init);
   </script>
 </body>
 </html>
-
-
