@@ -7,16 +7,16 @@
   <meta name="description" content="Лёгкий сайт, который тянет данные из Google Sheets и переключает листы красивыми кнопками." />
   <style>
     :root {
-      --bg: #f8dfea; /* нежно-розовый базовый фон */
+      --bg: #f8dfea; /* запасной фон */
       --bg-gradient: radial-gradient(120% 120% at 50% 0%, #fdebf3 0%, #fbd8e8 40%, #f9cfe1 100%);
-      --glass: rgba(0, 0, 0, 0.20); /* темнее панели на пару тонов */
-      --glass-2: rgba(0, 0, 0, 0.30); /* чуть темнее вариант */
-      --text: #19041f; /* белый текст */
+      --glass: rgba(0, 0, 0, 0.20); /* тёмное стекло под контент */
+      --glass-2: rgba(0, 0, 0, 0.30);
+      --text: #ffffff; /* читаемый текст на тёмном стекле */
       --muted: rgba(255,255,255,0.88);
-      --accent: #ff7aa5; /* светло-малиновый */
-      --accent-2: #e04682; /* чуть темнее */
+      --accent: #ff7aa5;
+      --accent-2: #e04682;
       --radius: 16px;
-      --table-height: 80vh; /* фиксированная высота области таблицы */
+      --table-height: 80vh;
     }
 
     html, body {
@@ -24,130 +24,57 @@
       margin: 0;
       color: var(--text);
       font-family: Calibri, "Segoe UI", Arial, Helvetica, sans-serif;
-      font-weight: 700; /* Calibri Bold везде */
-      background: var(--bg);
+      font-weight: 700;
+      background: url('https://publicportfolio-lime.vercel.app/image.png') center / cover no-repeat fixed, var(--bg);
       overflow-x: hidden;
     }
-
-    .container {
-      max-width: 100%;
-      margin: 40px auto;
-      padding: 0 10px 48px; /* узкий зазор ~10px от края экрана */
+    /* лёгкая затемняющая вуаль для читабельности поверх картинки */
+    body::before{
+      content: "";
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.10);
+      pointer-events: none;
+      z-index: 0;
     }
+
+    .container { position: relative; z-index: 1; max-width: 100%; margin: 40px auto; padding: 0 10px 48px; }
 
     /* Header + tabs */
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      margin-bottom: 18px;
-    }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
     .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px 14px;
-      border-radius: var(--radius);
-      background: var(--glass);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,255,255,0.28);
+      display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: var(--radius);
+      background: var(--glass); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.28);
       box-shadow: 0 10px 30px rgba(224,70,130,0.18);
     }
-    .brand .dot {
-      width: 10px; height: 10px; border-radius: 999px; background: var(--accent);
-      box-shadow: 0 0 18px var(--accent);
-    }
+    .brand .dot { width: 10px; height: 10px; border-radius: 999px; background: var(--accent); box-shadow: 0 0 18px var(--accent); }
     .brand h1 { font-size: 16px; margin: 0; font-weight: 600; }
 
-    .tabs {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      padding: 8px;
-      border-radius: calc(var(--radius) + 8px);
-      background: var(--glass);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,255,255,0.28);
-    }
+    .tabs { display: flex; flex-wrap: wrap; gap: 10px; padding: 8px; border-radius: calc(var(--radius) + 8px); background: var(--glass); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.28); }
     .tab-btn {
-      position: relative;
-      appearance: none;
-      border: 0;
-      padding: 10px 16px;
-      border-radius: 999px;
-      color: rgba(255,255,255,0.9);
-      background: transparent;
-      cursor: pointer;
-      font-weight: 700;
-      transition: all .18s ease;
-      isolation: isolate;
+      position: relative; appearance: none; border: 0; padding: 10px 16px; border-radius: 999px; color: rgba(255,255,255,0.9);
+      background: transparent; cursor: pointer; font-weight: 700; transition: all .18s ease; isolation: isolate;
     }
-    .tab-btn:hover { color: #19041f; transform: translateY(-1px) scale(1.01); }
-    .tab-btn.active { color: #19041f; }
-    .tab-btn.active::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      border-radius: 999px;
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      z-index: -1;
-      box-shadow: 0 10px 24px rgba(224, 70, 130, 0.35);
-    }
+    .tab-btn:hover { color: #fff; transform: translateY(-1px) scale(1.01); }
+    .tab-btn.active { color: #fff; }
+    .tab-btn.active::before { content: ""; position: absolute; inset: 0; border-radius: 999px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); z-index: -1; box-shadow: 0 10px 24px rgba(224, 70, 130, 0.35); }
 
     /* Card */
-    .card {
-      margin-top: 14px;
-      border-radius: calc(var(--radius) + 4px);
-      background: var(--glass);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255,255,255,0.30);
-      box-shadow: 0 18px 40px rgba(0,0,0,0.35);
-      overflow: hidden;
-    }
-    .card-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 14px 16px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
-      border-bottom: 1px solid rgba(255,255,255,0.09);
-    }
+    .card { margin-top: 14px; border-radius: calc(var(--radius) + 4px); background: var(--glass); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.30); box-shadow: 0 18px 40px rgba(0,0,0,0.35); overflow: hidden; }
+    .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)); border-bottom: 1px solid rgba(255,255,255,0.09); }
     .card-head .title { font-weight: 700; }
     .card-head .right { display: flex; gap: 8px; align-items: center; }
     .muted { color: #c9d1d9; opacity: 0.75; font-size: 13px; }
 
     .controls { display: flex; align-items: center; gap: 8px; }
-    .btn {
-      border: 0;
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      color: #19041f;
-      padding: 10px 14px;
-      border-radius: 12px;
-      cursor: pointer;
-      font-weight: 700;
-      transition: transform .15s ease, filter .15s ease;
-      box-shadow: 0 10px 20px rgba(224, 70, 130, 0.25);
-    }
+    .btn { border: 0; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; padding: 10px 14px; border-radius: 12px; cursor: pointer; font-weight: 700; transition: transform .15s ease, filter .15s ease; box-shadow: 0 10px 20px rgba(224, 70, 130, 0.25); }
     .btn:hover { filter: brightness(0.95); transform: translateY(-1px); }
 
     .table-wrap { height: var(--table-height); overflow: auto; padding: 0; }
     table { width: 100%; border-collapse: separate; border-spacing: 0; }
-    thead th {
-      position: sticky; top: 0; z-index: 5;
-      background: rgba(255,255,255,0.12);
-      backdrop-filter: blur(8px);
-      text-align: left; font-weight: 700; font-size: 13px; color: #19041f;
-      border-bottom: 1px solid rgba(255,255,255,0.18);
-      padding: 12px 14px;
-    }
-    tbody td {
-      padding: 10px 14px; font-size: 14px; color: #000; border-bottom: 1px solid rgba(0,0,0,0.10);
-      white-space: nowrap;
-    }
-    tbody tr:hover { background: rgba(255, 255, 255, 0.06); }
-    tbody tr:nth-child(2n) { background: rgba(255,255,255,0.035); }
+    thead th { position: sticky; top: 0; z-index: 5; background: rgba(255,255,255,0.12); backdrop-filter: blur(8px); text-align: left; font-weight: 700; font-size: 13px; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.18); padding: 12px 14px; }
+    tbody td { padding: 10px 14px; font-size: 14px; color: var(--text); border-bottom: 1px solid rgba(255,255,255,0.10); white-space: nowrap; }
+    tbody tr:hover { background: rgba(255, 255, 255, 0.10); }
+    tbody tr:nth-child(2n) { background: rgba(255,255,255,0.06); }
     thead th + th, tbody td + td { border-left: 1px solid rgba(255,255,255,0.08); }
     thead th:first-child { border-top-left-radius: 12px; }
     thead th:last-child { border-top-right-radius: 12px; }
@@ -156,25 +83,10 @@
     .cell-ticker { display: inline-flex; align-items: center; gap: 8px; }
     .cell-ticker img { width: 18px; height: 18px; border-radius: 4px; object-fit: contain; vertical-align: middle; }
 
-    .empty, .error, .loading {
-      padding: 28px 16px; font-size: 14px;
-    }
+    .empty, .error, .loading { padding: 28px 16px; font-size: 14px; }
 
-    .footer {
-      margin-top: 14px;
-      margin-left: 8px;
-      display: flex; align-items: center; gap: 12px;
-      color: #c9d1d9; opacity: .8; font-size: 12px;
-    }
-    .footer .note {
-      margin-left: auto;
-      margin-right: 2px;
-      font-family: Calibri, "Segoe UI", Arial, Helvetica, sans-serif;
-      font-weight: 700;
-      font-size: 10px;
-      color: #000;
-      opacity: 1;
-    }
+    .footer { margin-top: 14px; margin-left: 8px; display: flex; align-items: center; gap: 12px; color: #c9d1d9; opacity: .8; font-size: 12px; }
+    .footer .note { margin-left: auto; margin-right: 2px; font-family: Calibri, "Segoe UI", Arial, Helvetica, sans-serif; font-weight: 700; font-size: 10px; color: #000; opacity: 1; }
     .footer a { color: var(--accent); text-decoration: none; }
     .footer a:hover { text-decoration: underline; }
 
@@ -184,7 +96,7 @@
       .brand { justify-content: center; }
       .card-head { flex-direction: column; align-items: flex-start; gap: 6px; }
     }
-    #meta { color: #000 !important; }
+    #meta { color: #fff !important; }
   </style>
 </head>
 <body>
@@ -303,7 +215,7 @@ function gvizUrl(sheet) {
 
 function parseGviz(text) {
   const start = text.indexOf('{');
-  const end   = text.lastIndexOf('}') + 1; // берём последнюю закрывающую скобку
+  const end   = text.lastIndexOf('}') + 1;
   if (start < 0 || end <= start) {
     throw new Error('Не удалось распарсить JSON из gviz');
   }
@@ -313,9 +225,7 @@ function parseGviz(text) {
 // ===== Цвета/форматы через Google Sheets API v4 =====
 function rgbToHex(o){
   if(!o) return null;
-  const r=Math.round((o.red||0)*255),
-        g=Math.round((o.green||0)*255),
-        b=Math.round((o.blue||0)*255);
+  const r=Math.round((o.red||0)*255), g=Math.round((o.green||0)*255), b=Math.round((o.blue||0)*255);
   return '#' + [r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
 }
 
@@ -344,7 +254,7 @@ function fetchFormatsIfEnabled(sheetName){
   const cfg = SETTINGS.formats;
   if (!cfg || !cfg.enabled || !cfg.apiKey) return Promise.resolve(null);
   const src = parseSheetSource(SETTINGS.spreadsheetId);
-  if (src.kind !== 'd') return Promise.resolve(null); // API v4 работает только с обычным /d/ ID
+  if (src.kind !== 'd') return Promise.resolve(null);
   const range = "'" + sheetName.replace(/'/g, "''") + "'";
   const url = 'https://sheets.googleapis.com/v4/spreadsheets/' + src.id +
     '?includeGridData=true&ranges=' + encodeURIComponent(range) +
@@ -410,19 +320,13 @@ function renderTable(gviz, formatsMap) {
   // Определим колонку тикера, если она есть
   const colLabels = cols.map(function(c) { return String(c.label || c.id || ''); });
   const tickerCol = (function() {
-    for (var i = 0; i < colLabels.length; i++) {
-      if (/^(тикер|ticker|symbol)$/i.test(colLabels[i])) return i;
-    }
+    for (var i = 0; i < colLabels.length; i++) { if (/^(тикер|ticker|symbol)$/i.test(colLabels[i])) return i; }
     return -1;
   })();
 
   const thead = document.createElement('thead');
   const trh = document.createElement('tr');
-  cols.forEach(function(c) {
-    const th = document.createElement('th');
-    th.textContent = c.label || c.id || '';
-    trh.appendChild(th);
-  });
+  cols.forEach(function(c) { const th = document.createElement('th'); th.textContent = c.label || c.id || ''; trh.appendChild(th); });
   thead.appendChild(trh);
 
   const tbody = document.createElement('tbody');
@@ -432,24 +336,12 @@ function renderTable(gviz, formatsMap) {
       const td = document.createElement('td');
       const val = cellValue(c);
       if (idx === tickerCol && val) {
-        const wrap = document.createElement('span');
-        wrap.className = 'cell-ticker';
+        const wrap = document.createElement('span'); wrap.className = 'cell-ticker';
         const iconUrl = ICONS[String(val).toUpperCase()];
-        if (iconUrl) {
-          const img = document.createElement('img');
-          img.alt = '';
-          img.referrerPolicy = 'no-referrer';
-          img.src = iconUrl;
-          img.onerror = function() { img.style.display = 'none'; };
-          wrap.appendChild(img);
-        }
-        const text = document.createElement('span');
-        text.textContent = val;
-        wrap.appendChild(text);
+        if (iconUrl) { const img = document.createElement('img'); img.alt = ''; img.referrerPolicy = 'no-referrer'; img.src = iconUrl; img.onerror = function() { img.style.display = 'none'; }; wrap.appendChild(img); }
+        const text = document.createElement('span'); text.textContent = val; wrap.appendChild(text);
         td.appendChild(wrap);
-      } else {
-        td.textContent = val;
-      }
+      } else { td.textContent = val; }
       if (c && c.p) applyCellStyle(td, c.p);
       tr.appendChild(td);
     });
@@ -511,5 +403,3 @@ document.addEventListener('DOMContentLoaded', init);
   </script>
 </body>
 </html>
-
-
